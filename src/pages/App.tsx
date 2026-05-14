@@ -108,9 +108,14 @@ export default function App() {
     }
   };
 
-  const handleNewBrief = () => {
+const handleNewBrief = () => {
     setActiveBrief(null);
     setView("input");
+    
+    // Add this to auto-close the sidebar on mobile!
+    if (window.innerWidth <= 768) {
+      setSidebarOpen(false);
+    }
   };
 
   const handleLogout = () => {
@@ -284,11 +289,15 @@ export default function App() {
                 onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
                 onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
               >
+                {/* Remove the inline display: none from here */}
                 <span className="btn-text-full">+ New brief</span>
-                <span className="btn-text-short" style={{ display: 'none' }}>+</span>
+                <span className="btn-text-short">+</span>
               </button>
               
               <style>{`
+                /* Hide the short text by default using CSS, not inline styles */
+                .btn-text-short { display: none; }
+                
                 @media (max-width: 480px) {
                   .btn-text-full { display: none; }
                   .btn-text-short { display: inline; }
