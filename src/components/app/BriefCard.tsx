@@ -33,7 +33,6 @@ export default function BriefCard({
         border: `1px solid ${isActive ? "#CBFF5E25" : "transparent"}`,
         cursor: "pointer",
         transition: "all 0.15s ease",
-        group: "card",
       }}
       onClick={onSelect}
       onMouseEnter={(e) => {
