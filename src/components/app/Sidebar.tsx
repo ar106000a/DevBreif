@@ -21,6 +21,7 @@ export default function Sidebar({
   activeBriefId,
   loading,
   open,
+  onToggle, // Used for the mobile backdrop
   onSelect,
   onDelete,
   onNewBrief,
@@ -45,13 +46,11 @@ export default function Sidebar({
         .sidebar-wrap {
           width: 260px;
           min-width: 260px;
-          transition: all 0.25s ease;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s ease, min-width 0.25s ease;
           overflow: hidden;
+          z-index: 100;
         }
-        .sidebar-wrap.closed {
-          width: 0;
-          min-width: 0;
-        }
+        
         .sidebar-inner {
           width: 260px;
           height: 100vh;
@@ -61,6 +60,45 @@ export default function Sidebar({
           border-right: 1px solid #ffffff0f;
           overflow: hidden;
         }
+
+        /* Desktop specific styles */
+        @media (min-width: 769px) {
+          .sidebar-wrap.closed {
+            width: 0;
+            min-width: 0;
+          }
+          .mobile-backdrop {
+            display: none;
+          }
+        }
+
+        /* Mobile specific styles */
+        @media (max-width: 768px) {
+          .sidebar-wrap {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            transform: translateX(0);
+          }
+          .sidebar-wrap.closed {
+            transform: translateX(-100%);
+            width: 260px; /* Keep width fixed while sliding off-screen */
+            min-width: 260px;
+          }
+          .mobile-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 90;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            display: block;
+          }
+        }
+
+        /* Rest of your styles */
         .brief-list {
           overflow-y: auto;
           flex: 1;
@@ -68,16 +106,9 @@ export default function Sidebar({
           scrollbar-width: thin;
           scrollbar-color: #ffffff15 transparent;
         }
-        .brief-list::-webkit-scrollbar {
-          width: 4px;
-        }
-        .brief-list::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .brief-list::-webkit-scrollbar-thumb {
-          background: #ffffff15;
-          border-radius: 4px;
-        }
+        .brief-list::-webkit-scrollbar { width: 4px; }
+        .brief-list::-webkit-scrollbar-track { background: transparent; }
+        .brief-list::-webkit-scrollbar-thumb { background: #ffffff15; border-radius: 4px; }
         .new-brief-btn:hover {
           background: #CBFF5E15 !important;
           border-color: #CBFF5E40 !important;
@@ -89,6 +120,9 @@ export default function Sidebar({
         }
       `}</style>
 
+      {/* Mobile Backdrop (Closes sidebar when tapped outside) */}
+      {open && <div className="mobile-backdrop" onClick={onToggle} />}
+
       <div className={`sidebar-wrap ${open ? "" : "closed"}`}>
         <div className="sidebar-inner">
           {/* Header */}
@@ -98,7 +132,6 @@ export default function Sidebar({
               borderBottom: "1px solid #ffffff0f",
             }}
           >
-            {/* Logo */}
             <div
               onClick={() => navigate("/")}
               style={{
@@ -108,12 +141,12 @@ export default function Sidebar({
                 letterSpacing: "-0.02em",
                 marginBottom: "1rem",
                 paddingLeft: "0.25rem",
+                cursor: "pointer",
               }}
             >
               dev<span style={{ color: "#CBFF5E" }}>brief</span>
             </div>
 
-            {/* New brief button */}
             <button
               className="new-brief-btn"
               onClick={onNewBrief}
@@ -149,7 +182,6 @@ export default function Sidebar({
 
           {/* Brief list */}
           <div className="brief-list">
-            {/* Section label */}
             <div
               style={{
                 fontFamily: "'DM Mono', monospace",
@@ -163,27 +195,15 @@ export default function Sidebar({
               Recent briefs
             </div>
 
-            {/* Loading state */}
             {loading && (
               <div style={{ padding: "1rem 0.25rem" }}>
                 <Loader label="Loading briefs..." />
               </div>
             )}
 
-            {/* Empty state */}
             {!loading && briefs.length === 0 && (
-              <div
-                style={{
-                  padding: "2rem 0.5rem",
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "1.5rem",
-                    marginBottom: "0.5rem",
-                  }}
-                >
+              <div style={{ padding: "2rem 0.5rem", textAlign: "center" }}>
+                <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>
                   💡
                 </div>
                 <div
@@ -201,7 +221,6 @@ export default function Sidebar({
               </div>
             )}
 
-            {/* Brief cards */}
             {!loading &&
               briefs.map((brief) => (
                 <BriefCard
@@ -216,12 +235,7 @@ export default function Sidebar({
           </div>
 
           {/* Footer */}
-          <div
-            style={{
-              padding: "0.75rem",
-              borderTop: "1px solid #ffffff0f",
-            }}
-          >
+          <div style={{ padding: "0.75rem", borderTop: "1px solid #ffffff0f" }}>
             <button
               className="logout-btn"
               onClick={onLogout}

@@ -13,7 +13,7 @@ export interface Brief {
   stack: string[];
   timeline: string;
   questions: string[];
-  is_public: boolean; // add this
+  is_public: boolean;
   explanation?: string | null;
   created_at: string;
 }
@@ -35,7 +35,7 @@ export default function App() {
     if (!token) navigate("/auth");
   });
 
-  // Fetch saved briefs — wire to Supabase later
+  // Fetch saved briefs
   useEffect(() => {
     const fetchBriefs = async () => {
       setLoadingBriefs(true);
@@ -61,20 +61,16 @@ export default function App() {
         timeline: brief.timeline,
         questions: brief.questions,
       });
-      // Use the ID from DB, not the frontend-generated one
       const saved = { ...brief, id: res.data.brief.id };
       setBriefs((prev) => [saved, ...prev]);
       return saved;
     } catch (error: any) {
-      // Still show locally if save fails
-      console.log(
-        "brief not saved in db",
-        error.response?.data || error.message,
-      );
+      console.log("brief not saved in db", error.response?.data || error.message);
       setBriefs((prev) => [brief, ...prev]);
       return brief;
     }
   };
+
   const handleExplanationGenerated = (id: string, explanation: string) => {
     setBriefs((prev) =>
       prev.map((b) => (b.id === id ? { ...b, explanation } : b)),
@@ -106,6 +102,10 @@ export default function App() {
   const handleSelectBrief = (brief: Brief) => {
     setActiveBrief(brief);
     setView("result");
+    // Auto-close sidebar on mobile devices after selection
+    if (window.innerWidth <= 768) {
+      setSidebarOpen(false);
+    }
   };
 
   const handleNewBrief = () => {
@@ -117,7 +117,7 @@ export default function App() {
     localStorage.removeItem("token");
     navigate("/auth");
   };
-  // In App.tsx
+
   const toggleShare = async (id: string) => {
     try {
       const res = await api.patch(`/api/brief/${id}/toggle-share`);
@@ -154,7 +154,7 @@ export default function App() {
         activeBriefId={activeBrief?.id ?? null}
         loading={loadingBriefs}
         open={sidebarOpen}
-        onToggle={() => setSidebarOpen((prev) => !prev)}
+        onToggle={() => setSidebarOpen(false)} // Toggled closed via backdrop click
         onSelect={handleSelectBrief}
         onDelete={deleteBrief}
         onNewBrief={handleNewBrief}
@@ -169,6 +169,7 @@ export default function App() {
           display: "flex",
           flexDirection: "column",
           transition: "all 0.25s ease",
+          width: "100%", // Explicitly take up remaining width
         }}
       >
         {/* Top bar */}
@@ -177,7 +178,7 @@ export default function App() {
             display: "flex",
             alignItems: "center",
             gap: "0.75rem",
-            padding: "1.25rem 2rem",
+            padding: "1rem 1.25rem", // slightly less padding for smaller screens
             borderBottom: "1px solid #ffffff0f",
             position: "sticky",
             top: 0,
@@ -211,35 +212,15 @@ export default function App() {
             }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <rect
-                x="2"
-                y="4"
-                width="12"
-                height="1.5"
-                rx="1"
-                fill="currentColor"
-              />
-              <rect
-                x="2"
-                y="7.25"
-                width="12"
-                height="1.5"
-                rx="1"
-                fill="currentColor"
-              />
-              <rect
-                x="2"
-                y="10.5"
-                width="12"
-                height="1.5"
-                rx="1"
-                fill="currentColor"
-              />
+              <rect x="2" y="4" width="12" height="1.5" rx="1" fill="currentColor" />
+              <rect x="2" y="7.25" width="12" height="1.5" rx="1" fill="currentColor" />
+              <rect x="2" y="10.5" width="12" height="1.5" rx="1" fill="currentColor" />
             </svg>
           </button>
 
-          {/* Logo */}
+          {/* Logo (Hide on very small screens to make room for breadcrumb) */}
           <span
+            className="app-logo"
             onClick={() => {
               const token = localStorage.getItem("token");
               if (!token) navigate("/");
@@ -256,6 +237,12 @@ export default function App() {
             dev<span style={{ color: "#CBFF5E" }}>brief</span>
           </span>
 
+          <style>{`
+            @media (max-width: 480px) {
+              .app-logo { display: none; } 
+            }
+          `}</style>
+
           {/* Breadcrumb */}
           {activeBrief && view === "result" && (
             <>
@@ -265,7 +252,7 @@ export default function App() {
                   fontSize: "0.85rem",
                   color: "#ffffff50",
                   fontFamily: "'DM Mono', monospace",
-                  maxWidth: "300px",
+                  maxWidth: "clamp(100px, 30vw, 300px)", // Responsive max-width
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -285,19 +272,28 @@ export default function App() {
                   background: "#CBFF5E",
                   color: "#080808",
                   border: "none",
-                  padding: "0.5rem 1.1rem",
+                  padding: "0.5rem 1rem",
                   borderRadius: "6px",
                   fontFamily: "'DM Sans', sans-serif",
                   fontWeight: 500,
                   fontSize: "0.85rem",
                   cursor: "pointer",
                   transition: "opacity 0.2s",
+                  whiteSpace: "nowrap",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
                 onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
               >
-                + New brief
+                <span className="btn-text-full">+ New brief</span>
+                <span className="btn-text-short" style={{ display: 'none' }}>+</span>
               </button>
+              
+              <style>{`
+                @media (max-width: 480px) {
+                  .btn-text-full { display: none; }
+                  .btn-text-short { display: inline; }
+                }
+              `}</style>
             </div>
           )}
         </div>
@@ -306,7 +302,7 @@ export default function App() {
         <div
           style={{
             flex: 1,
-            padding: "2.5rem 2rem",
+            padding: "max(1.5rem, 5vw) max(1rem, 5vw)", // Responsive padding
             maxWidth: "780px",
             width: "100%",
             margin: "0 auto",
@@ -321,7 +317,6 @@ export default function App() {
             />
           )}
           {view === "result" && activeBrief && (
-            // Pass to BriefResult:
             <BriefResult
               brief={activeBrief}
               onNewBrief={handleNewBrief}
