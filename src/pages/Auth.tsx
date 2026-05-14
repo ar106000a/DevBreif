@@ -55,7 +55,7 @@ export default function Auth() {
   >("idle");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const API = "http://localhost:5000"; // swap to devbrief-auth later
+  const API = import.meta.env.VITE_API_URL; // swap to devbrief-auth later
 
   // ─── Field updater ───────────────────────────────────────────
   const update = (field: keyof FormState) => (val: string) => {
