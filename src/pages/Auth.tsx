@@ -221,7 +221,7 @@ export default function Auth() {
         body: JSON.stringify({ id: verifyContext.userId, otp: form.otp }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Verification failed");
+      if (!res.ok) throw new Error(data.error || "Verification failed");
 
       if (data.accessToken) {
         // Auto-login flow
