@@ -99,8 +99,7 @@ export default function Auth() {
   // ─── Validation ───────────────────────────────────────────────
   const validateLogin = (): boolean => {
     const e: Errors = {};
-    if (!form.email) e.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Enter a valid email";
+    if (!form.email) e.email = "Email or username is required";
     if (!form.password) e.password = "Password is required";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -136,7 +135,10 @@ export default function Auth() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email: form.email, password: form.password }),
+        body: JSON.stringify({
+          identifier: form.email,
+          password: form.password,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Login failed");
@@ -512,11 +514,11 @@ export default function Auth() {
             style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
           >
             <Input
-              label="Email"
-              type="email"
+              label="Email or Username"
+              type="text"
               value={form.email}
               onChange={update("email")}
-              placeholder="you@example.com"
+              placeholder="you@example.com or your handle"
               error={errors.email}
               disabled={loading}
             />
@@ -652,6 +654,16 @@ export default function Auth() {
               error={errors.email}
               disabled={loading}
             />
+            <div
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: "0.72rem",
+                color: "#ffffff25",
+                paddingLeft: "2px",
+              }}
+            >
+              Enter the email linked to your account
+            </div>
           </div>
         )}
 
