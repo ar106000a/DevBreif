@@ -13,36 +13,28 @@ const api = axios.create({
   },
 });
 
-// ─── Token helpers ────────────────────────────────────────────
-export const getToken = (): string | null => localStorage.getItem("token");
-export const setToken = (token: string): void =>
-  localStorage.setItem("token", token);
-export const clearToken = (): void => localStorage.removeItem("token");
+// Note: Access tokens are moved to httpOnly cookies set by the server.
+// The client should not read or write access tokens from JavaScript.
 
 // ─── Refresh state ────────────────────────────────────────────
 let isRefreshing = false;
 let failedQueue: {
-  resolve: (token: string) => void;
+  resolve: () => void;
   reject: (err: unknown) => void;
 }[] = [];
 
-const processQueue = (error: unknown, token: string | null = null) => {
+const processQueue = (error: unknown) => {
   failedQueue.forEach(({ resolve, reject }) => {
     if (error) reject(error);
-    else resolve(token!);
+    else resolve();
   });
   failedQueue = [];
 };
 
 // ─── Request interceptor ─────────────────────────────────────
+// We rely on cookies for auth; do not attach Authorization header from JS.
 api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = getToken();
-    if (token && config.headers) {
-      config.headers["Authorization"] = `Bearer ${token}`;
-    }
-    return config;
-  },
+  (config: InternalAxiosRequestConfig) => config,
   (error) => Promise.reject(error),
 );
 
@@ -64,10 +56,7 @@ api.interceptors.response.use(
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject });
       })
-        .then((token) => {
-          if (originalRequest.headers) {
-            originalRequest.headers["Authorization"] = `Bearer ${token}`;
-          }
+        .then(() => {
           return api(originalRequest);
         })
         .catch((err) => Promise.reject(err));
@@ -84,23 +73,13 @@ api.interceptors.response.use(
         { withCredentials: true }, // sends httpOnly refresh token cookie
       );
 
-      const newToken = res.data.accessToken;
-
-      if (!newToken) throw new Error("No token in refresh response");
-
-      setToken(newToken);
-      processQueue(null, newToken);
-
-      // Retry original request with new token
-      if (originalRequest.headers) {
-        originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
-      }
-
+      // On successful refresh the server should set httpOnly cookies.
+      // Resolve queued requests so they can retry; the cookie will be sent automatically.
+      processQueue(null);
       return api(originalRequest);
     } catch (refreshError) {
-      // Refresh failed — logout
-      processQueue(refreshError, null);
-      clearToken();
+      // Refresh failed — redirect to auth. Server should clear cookies on its side.
+      processQueue(refreshError);
       window.location.href = "/auth";
       return Promise.reject(refreshError);
     } finally {

@@ -2,6 +2,7 @@ import type { Brief } from "../../pages/App";
 import ExportMenu from "./ExportMenu";
 import BlueprintDialog from "./BlueprintDialog";
 import { useState } from "react";
+import ShareToggle from "./ShareToggle";
 
 // Add inside BriefResult props interface:
 interface BriefResultProps {
@@ -35,7 +36,12 @@ const Section = ({
   </div>
 );
 
-export default function BriefResult({ brief, onNewBrief, onExplanationGenerated }: BriefResultProps) {
+export default function BriefResult({
+  brief,
+  onNewBrief,
+  onExplanationGenerated,
+  onToggleShare,
+}: BriefResultProps) {
   const [showBlueprint, setShowBlueprint] = useState(false);
   return (
     <div style={{ maxWidth: "680px", margin: "0 auto" }}>
@@ -90,6 +96,13 @@ export default function BriefResult({ brief, onNewBrief, onExplanationGenerated 
             })}
           </div>
         </div>
+
+        {/* Share toggle */}
+        <ShareToggle
+          briefId={brief.id}
+          isPublic={brief.is_public}
+          onToggle={onToggleShare}
+        />
 
         {/* Export */}
         <ExportMenu brief={brief} />

@@ -153,8 +153,7 @@ export default function Auth() {
         return;
       }
 
-      // Verified — save token and go to app
-      localStorage.setItem("token", data.accessToken);
+      // Verified — server should set httpOnly cookie; proceed to app
       setToast({ message: "Welcome back!", type: "success" });
       setTimeout(() => navigate("/app"), 1000);
     } catch (err: any) {
@@ -226,8 +225,7 @@ export default function Auth() {
       if (!res.ok) throw new Error(data.error || "Verification failed");
 
       if (data.accessToken) {
-        // Auto-login flow
-        localStorage.setItem("token", data.accessToken);
+        // Auto-login flow: server should set httpOnly cookie; navigate to app
         setToast({ message: "Email verified! Welcome.", type: "success" });
         setTimeout(() => navigate("/app"), 1000);
       } else {
