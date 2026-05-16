@@ -18,10 +18,11 @@ const api = axios.create({
 
 // ─── Refresh state ────────────────────────────────────────────
 let isRefreshing = false;
-let failedQueue: {
-  resolve: () => void;
-  reject: (err: unknown) => void;
-}[] = [];
+type QueueItem = {
+  resolve: (value?: unknown) => void;
+  reject: (error?: unknown) => void;
+};
+let failedQueue: QueueItem[] = [];
 
 const processQueue = (error: unknown) => {
   failedQueue.forEach(({ resolve, reject }) => {
@@ -67,7 +68,7 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const res = await axios.post(
+      await axios.post(
         `${BASE_URL}/api/auth/refresh`,
         {},
         { withCredentials: true }, // sends httpOnly refresh token cookie
