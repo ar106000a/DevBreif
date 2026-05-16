@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Brief } from "../../pages/App";
 import Toast from "../ui/Toast";
 
@@ -37,6 +37,15 @@ export default function ExportMenu({ brief }: ExportMenuProps) {
     message: string;
     type: "success" | "error";
   } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth <= 480);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   const handleCopy = async () => {
     try {
@@ -75,6 +84,7 @@ export default function ExportMenu({ brief }: ExportMenuProps) {
       <div style={{ position: "relative" }}>
         {/* Trigger */}
         <button
+          ref={triggerRef}
           onClick={() => setOpen((prev) => !prev)}
           style={{
             display: "flex",
@@ -142,16 +152,23 @@ export default function ExportMenu({ brief }: ExportMenuProps) {
             />
             <div
               style={{
-                position: "absolute",
-                top: "calc(100% + 6px)",
-                right: 0,
+                position: isMobile ? "fixed" : "absolute",
+                ...(isMobile
+                  ? {
+                      left: 12,
+                      right: 12,
+                      bottom: 12,
+                      borderRadius: 12,
+                    }
+                  : { top: "calc(100% + 6px)", right: 0 }),
                 background: "#1a1a1a",
                 border: "1px solid #ffffff15",
-                borderRadius: "10px",
                 padding: "0.4rem",
                 zIndex: 10,
-                minWidth: "180px",
+                minWidth: isMobile ? undefined : "180px",
                 boxShadow: "0 8px 32px #00000060",
+                maxHeight: isMobile ? "60vh" : "none",
+                overflow: isMobile ? "auto" : "visible",
               }}
             >
               {[
