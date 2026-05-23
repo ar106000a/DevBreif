@@ -14,7 +14,7 @@ export interface Brief {
   stack: string[];
   timeline: string;
   questions: string[];
-  cost: string; // add
+  cost: string; 
   team: string;
   is_public: boolean;
   explanation?: string | null;
@@ -35,35 +35,44 @@ export default function App() {
 
   // Auth guard: verify session via refresh endpoint (httpOnly cookies)
   useEffect(() => {
+    let isMounted = true;
     const check = async () => {
       try {
+        // Double check: Ensure your '../lib/api' file has `withCredentials: true` set globally!
         await api.post("/api/auth/refresh");
-        setAuthChecking(false);
-      } catch {
-        navigate("/auth");
-      } finally {
-        setAuthChecking(false);
+        if (isMounted) setAuthChecking(false);
+      } catch (err) {
+        console.error("Auth verification failed:", err);
+        if (isMounted) navigate("/auth");
       }
     };
     check();
+    return () => { isMounted = false; };
   }, [navigate]);
 
-  // Fetch saved briefs
+  // Fetch saved briefs - DEPENDENCY ARRAY FIXED
+  // Only attempts to fetch once auth checking completes successfully
   useEffect(() => {
+    if (authChecking) return; 
+
+    let isMounted = true;
     const fetchBriefs = async () => {
       setLoadingBriefs(true);
       try {
         const res = await api.get("/app/brief/list");
         console.debug("fetchBriefs response:", res);
-        setBriefs(res.data?.briefs ?? []);
-      } catch {
-        setBriefs([]);
+        if (isMounted) setBriefs(res.data?.briefs ?? []);
+      } catch (err) {
+        console.error("Error fetching briefs:", err);
+        if (isMounted) setBriefs([]);
       } finally {
-        setLoadingBriefs(false);
+        if (isMounted) setLoadingBriefs(false);
       }
     };
+
     fetchBriefs();
-  }, []);
+    return () => { isMounted = false; };
+  }, [authChecking]); // authChecking added here clears the missing dependency lint warning safely
 
   const saveBrief = async (brief: Brief) => {
     try {
@@ -73,7 +82,7 @@ export default function App() {
         features: brief.features,
         stack: brief.stack,
         timeline: brief.timeline,
-        cost: brief.cost, // add
+        cost: brief.cost, 
         team: brief.team,
         questions: brief.questions,
       });
@@ -85,10 +94,8 @@ export default function App() {
       let errorDetails: unknown = "Unknown error";
 
       if (axios.isAxiosError(error)) {
-        // TypeScript now knows this is an AxiosError
         errorDetails = error.response?.data || error.message;
       } else if (error instanceof Error) {
-        // Fallback for non-network errors (like a typo in your code)
         errorDetails = error.message;
       }
 
@@ -129,7 +136,6 @@ export default function App() {
   const handleSelectBrief = (brief: Brief) => {
     setActiveBrief(brief);
     setView("result");
-    // Auto-close sidebar on mobile devices after selection
     if (window.innerWidth <= 768) {
       setSidebarOpen(false);
     }
@@ -138,8 +144,6 @@ export default function App() {
   const handleNewBrief = () => {
     setActiveBrief(null);
     setView("input");
-
-    // Add this to auto-close the sidebar on mobile!
     if (window.innerWidth <= 768) {
       setSidebarOpen(false);
     }
@@ -147,6 +151,7 @@ export default function App() {
 
   const handleLogout = () => {
     try {
+      // Production fix: Added credentials field here explicitly too
       fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     } catch (err: unknown) {
       console.log("Logout request failed:", err);
@@ -156,7 +161,6 @@ export default function App() {
   };
 
   const toggleShare = async (id: string) => {
-    // Optimistic update — flip immediately before API call
     const currentBrief = briefs.find((b) => b.id === id);
     const optimisticState = !currentBrief?.is_public;
 
@@ -170,7 +174,6 @@ export default function App() {
     }
 
     try {
-      // Sync with actual server state
       const res = await api.patch(`/app/brief/${id}/toggle-share`);
       const serverState = res.data.is_public;
 
@@ -183,7 +186,6 @@ export default function App() {
         );
       }
     } catch (err) {
-      // Revert on error
       setBriefs((prev) =>
         prev.map((b) =>
           b.id === id ? { ...b, is_public: !optimisticState } : b,
@@ -197,6 +199,8 @@ export default function App() {
       console.error("Failed to toggle share", err);
     }
   };
+
+
 
   return (
     // Don't render app until auth check completes

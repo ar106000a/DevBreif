@@ -6,11 +6,12 @@ import Landing from "./pages/Landing"; // Adjust this path if you put this file 
 export default function LandingWrapper() {
   const [checking, setChecking] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
-
+  const BASE_URL =
+    import.meta.env.NODE_ENV === "production" ? "" : import.meta.env.BASE_URL;
   useEffect(() => {
     const check = async () => {
       try {
-        const res = await fetch("/api/auth/refresh", {
+        const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
           method: "POST",
           credentials: "include",
         });
