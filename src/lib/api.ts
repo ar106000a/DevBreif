@@ -2,7 +2,7 @@ import axios from "axios";
 import type { AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
 
 const BASE_URL =
-  import.meta.env.NODE_ENV === "production" ? "" : "http://localhost:5000";
+  import.meta.env.NODE_ENV === "development" ? "http://localhost:5000" : "";
 
 // ─── Axios instance ───────────────────────────────────────────
 const api = axios.create({
