@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios"; // Added for type guarding Axios errors
 import api from "../lib/api";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
@@ -52,24 +53,55 @@ export default function Settings() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
-  const fetchUser = async () => {
-    setLoadingUser(true);
-    try {
-      const res = await api.get("/app/user/me");
-      setUser(res.data.user);
-      setUsername(res.data.user.username);
-      setAvatarPreview(res.data.user.avatar_url);
-    } catch {
-      navigate("/auth");
-    } finally {
-      setLoadingUser(false);
-    }
-  };
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) navigate("/auth");
+    let isMounted = true;
+    let token = null;
+
+    // Wrap in try-catch: Mobile Safari in Private Mode sometimes blocks localStorage access
+    try {
+      token = localStorage.getItem("token");
+    } catch {
+      console.warn("LocalStorage access denied");
+    }
+
+    if (!token) {
+      navigate("/auth");
+      return;
+    }
+
+    const fetchUser = async () => {
+      setLoadingUser(true);
+      try {
+        const res = await api.get("/app/user/me");
+
+        // Only update state if the component is still mounted
+        if (isMounted) {
+          setUser(res.data.user);
+          setUsername(res.data.user.username);
+          setAvatarPreview(res.data.user.avatar_url);
+        }
+      } catch {
+        if (isMounted) {
+          // CRITICAL FIX: Destroy the invalid token before navigating.
+          // Otherwise, /auth will see the token and redirect right back here!
+          localStorage.removeItem("token");
+          navigate("/auth");
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingUser(false);
+        }
+      }
+    };
+
     fetchUser();
-  });
+
+    // Cleanup function prevents state updates on unmounted components
+    // during React 18 Strict Mode's double-mount.
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
 
   // ── Avatar ───────────────────────────────────────────────────
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,11 +126,14 @@ export default function Settings() {
         prev ? { ...prev, avatar_url: res.data.avatar_url } : null,
       );
       setToast({ message: "Avatar updated", type: "success" });
-    } catch (err: any) {
-      setToast({
-        message: err.response?.data?.message || "Failed to upload avatar",
-        type: "error",
-      });
+    } catch (err: unknown) {
+      // Fix: any -> unknown error handling
+      const message =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : "Failed to upload avatar";
+
+      setToast({ message, type: "error" });
     } finally {
       setAvatarLoading(false);
     }
@@ -126,10 +161,14 @@ export default function Settings() {
         prev ? { ...prev, username: res.data.user.username } : null,
       );
       setToast({ message: "Username updated", type: "success" });
-    } catch (err: any) {
-      setUsernameError(
-        err.response?.data?.message || "Failed to update username",
-      );
+    } catch (err: unknown) {
+      // Fix: any -> unknown error handling
+      const message =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : "Failed to update username";
+
+      setUsernameError(message);
     } finally {
       setUsernameLoading(false);
     }
@@ -156,10 +195,14 @@ export default function Settings() {
       setNewPassword("");
       setConfirmPassword("");
       setToast({ message: "Password updated successfully", type: "success" });
-    } catch (err: any) {
-      setPasswordErrors({
-        current: err.response?.data?.message || "Failed to update password",
-      });
+    } catch (err: unknown) {
+      // Fix: any -> unknown error handling
+      const message =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : "Failed to update password";
+
+      setPasswordErrors({ current: message });
     } finally {
       setPasswordLoading(false);
     }
@@ -179,8 +222,14 @@ export default function Settings() {
       });
       localStorage.removeItem("token");
       navigate("/auth");
-    } catch (err: any) {
-      setDeleteError(err.response?.data?.message || "Failed to delete account");
+    } catch (err: unknown) {
+      // Fix: any -> unknown error handling
+      const message =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : "Failed to delete account";
+
+      setDeleteError(message);
     } finally {
       setDeleteLoading(false);
     }
