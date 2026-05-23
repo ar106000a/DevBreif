@@ -5,7 +5,7 @@ import Input from "../components/ui/Input";
 import Toast from "../components/ui/Toast";
 
 // Fix 2: Move API outside the component so it never triggers dependency warnings
-const API = import.meta.env.VITE_API_URL; // swap to devbrief-auth later
+const API = import.meta.env.VITE_API_URL || ""; // swap to devbrief-auth later
 
 type View =
   | "login"
