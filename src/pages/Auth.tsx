@@ -4,6 +4,9 @@ import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import Toast from "../components/ui/Toast";
 
+// Fix 2: Move API outside the component so it never triggers dependency warnings
+const API = import.meta.env.VITE_API_URL; // swap to devbrief-auth later
+
 type View =
   | "login"
   | "register"
@@ -55,23 +58,30 @@ export default function Auth() {
   >("idle");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const API = import.meta.env.VITE_API_URL; // swap to devbrief-auth later
-
   // ─── Field updater ───────────────────────────────────────────
   const update = (field: keyof FormState) => (val: string) => {
     setForm((prev) => ({ ...prev, [field]: val }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
+
+    // Fix 1: Handle synchronous status updates directly in the event handler
+    if (field === "username") {
+      if (!val || val.length < 3) {
+        setUsernameStatus("idle");
+      } else {
+        setUsernameStatus("checking");
+      }
+    }
   };
 
   // ─── Username realtime check ──────────────────────────────────
   useEffect(() => {
     if (view !== "register") return;
-    if (!form.username || form.username.length < 3) {
-      setUsernameStatus((prev) => (prev !== "idle" ? "idle" : prev));
-      return;
-    }
-    setUsernameStatus("checking");
+
+    // Bail early if the username isn't valid yet (status is already handled by `update`)
+    if (!form.username || form.username.length < 3) return;
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
+
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(`${API}/api/auth/username`, {
@@ -81,20 +91,23 @@ export default function Auth() {
           body: JSON.stringify({ email: form.email, username: form.username }),
         });
         const data = await res.json();
+
         if (data?.isAvailable) {
           console.log("username available");
         } else {
           console.log("username unavailable");
         }
+
         setUsernameStatus(data.isAvailable ? "available" : "taken");
       } catch {
         setUsernameStatus("idle");
       }
     }, 1000);
+
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [form.username, form.email, view]);
+  }, [form.username, form.email, view]); // No more missing dependency warnings
 
   // ─── Validation ───────────────────────────────────────────────
   const validateLogin = (): boolean => {
@@ -156,9 +169,11 @@ export default function Auth() {
       // Verified — server should set httpOnly cookie; proceed to app
       setToast({ message: "Welcome back!", type: "success" });
       setTimeout(() => navigate("/app"), 1000);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Something went wrong";
       setToast({
-        message: err.message || "Something went wrong",
+        message: errorMessage,
         type: "error",
       });
     } finally {
@@ -201,9 +216,11 @@ export default function Auth() {
         message: `We sent a 6-digit code to ${form.email}`,
       });
       setView("verify");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Something went wrong";
       setToast({
-        message: err.message || "Something went wrong",
+        message: errorMessage,
         type: "error",
       });
     } finally {
@@ -236,9 +253,11 @@ export default function Auth() {
         });
         setTimeout(() => switchView("login"), 1500);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Something went wrong";
       setToast({
-        message: err.message || "Something went wrong",
+        message: errorMessage,
         type: "error",
       });
     } finally {
@@ -269,9 +288,11 @@ export default function Auth() {
       setToast({ message: `OTP sent to ${form.email}`, type: "success" });
       setView("reset-verify");
       setForm((prev) => ({ ...prev, otp: "" }));
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Something went wrong";
       setToast({
-        message: err.message || "Something went wrong",
+        message: errorMessage,
         type: "error",
       });
     } finally {
@@ -300,9 +321,11 @@ export default function Auth() {
       });
       setView("reset-password");
       setForm((prev) => ({ ...prev, password: "" }));
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Something went wrong";
       setToast({
-        message: err.message || "Something went wrong",
+        message: errorMessage,
         type: "error",
       });
     } finally {
@@ -334,9 +357,11 @@ export default function Auth() {
         type: "success",
       });
       setTimeout(() => switchView("login"), 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Something went wrong";
       setToast({
-        message: err.message || "Something went wrong",
+        message: errorMessage,
         type: "error",
       });
     } finally {

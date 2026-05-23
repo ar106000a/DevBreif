@@ -236,37 +236,84 @@ export default function Sidebar({
 
           {/* Footer */}
           <div style={{ padding: "0.75rem", borderTop: "1px solid #ffffff0f" }}>
-            <button
-              className="logout-btn"
-              onClick={onLogout}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.6rem 0.75rem",
-                background: "transparent",
-                border: "none",
-                borderRadius: "8px",
-                color: "#ffffff30",
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: "0.82rem",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                textAlign: "left",
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path
-                  d="M5 2H2a1 1 0 00-1 1v8a1 1 0 001 1h3M9 10l3-3-3-3M13 7H5"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Sign out
-            </button>
+            {/* Settings + Logout row */}
+            <div style={{ display: "flex", gap: "0.4rem" }}>
+              {/* Settings button */}
+              <button
+                onClick={() => navigate("/settings")}
+                title="Settings"
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.6rem 0.75rem",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: "8px",
+                  color: "#ffffff30",
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: "0.82rem",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  textAlign: "left",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#ffffff";
+                  e.currentTarget.style.background = "#ffffff08";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#ffffff30";
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle
+                    cx="7"
+                    cy="7"
+                    r="2"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                  />
+                  <path
+                    d="M7 1v1M7 12v1M1 7h1M12 7h1M2.93 2.93l.7.7M10.37 10.37l.7.7M2.93 11.07l.7-.7M10.37 3.63l.7-.7"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                Settings
+              </button>
+
+              {/* Logout button */}
+              <button
+                className="logout-btn"
+                onClick={onLogout}
+                title="Sign out"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "0.6rem 0.75rem",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: "8px",
+                  color: "#ffffff30",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M5 2H2a1 1 0 00-1 1v8a1 1 0 001 1h3M9 10l3-3-3-3M13 7H5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>

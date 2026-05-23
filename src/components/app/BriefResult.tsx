@@ -177,6 +177,77 @@ export default function BriefResult({
           {brief.timeline}
         </span>
       </div>
+      
+      {/* Cost */}
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "0.6rem",
+          background: "#ffffff08",
+          border: "1px solid #ffffff15",
+          borderRadius: "100px",
+          padding: "0.5rem 1.1rem",
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="5.5" stroke="#ffffff40" strokeWidth="1.2" />
+          <path
+            d="M7 4v1M7 9v1M5.5 8a1.5 1.5 0 003 0c0-.83-.67-1.5-1.5-1.5S5.5 6.83 5.5 6a1.5 1.5 0 013 0"
+            stroke="#ffffff40"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+          />
+        </svg>
+        <span
+          style={{
+            fontFamily: "'DM Mono', monospace",
+            fontSize: "0.8rem",
+            color: "#ffffff50",
+          }}
+        >
+          {brief.cost}
+        </span>
+      </div>
+
+      {/* Team */}
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "0.6rem",
+          background: "#ffffff08",
+          border: "1px solid #ffffff15",
+          borderRadius: "100px",
+          padding: "0.5rem 1.1rem",
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="5" cy="4" r="2" stroke="#ffffff40" strokeWidth="1.2" />
+          <circle cx="9" cy="4" r="2" stroke="#ffffff40" strokeWidth="1.2" />
+          <path
+            d="M1 11c0-2.21 1.79-4 4-4s4 1.79 4 4"
+            stroke="#ffffff40"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M9 7c1.66 0 3 1.34 3 3"
+            stroke="#ffffff40"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+          />
+        </svg>
+        <span
+          style={{
+            fontFamily: "'DM Mono', monospace",
+            fontSize: "0.8rem",
+            color: "#ffffff50",
+          }}
+        >
+          {brief.team}
+        </span>
+      </div>
 
       {/*blueprint button*/}
       <button

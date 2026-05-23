@@ -61,14 +61,18 @@ export default function BriefInput({
         features: parsed.features,
         stack: parsed.stack,
         timeline: parsed.timeline,
+        cost: parsed.cost, // add
+        team: parsed.team,
         questions: parsed.questions,
         is_public: parsed.is_public ?? false,
         created_at: new Date().toISOString(),
       };
 
       onGenerated(brief);
-    } catch (err: any) {
-      setError(err.message || "Something went wrong — please try again.");
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Something went wrong";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

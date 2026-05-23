@@ -6,6 +6,7 @@ import "./index.css";
 import Landing from "./pages/Landing";
 import AppPage from "./pages/App";
 import Auth from "./pages/Auth";
+import Settings from "./pages/Settings";
 
 function LandingWrapper() {
   const [checking, setChecking] = useState(true);
@@ -40,6 +41,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/app" element={<AppPage />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/brief/:id" element={<PublicBrief />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

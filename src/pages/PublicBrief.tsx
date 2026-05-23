@@ -1,6 +1,6 @@
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
 
 interface PublicBriefData {
   id: string;
@@ -9,6 +9,8 @@ interface PublicBriefData {
   features: string[];
   stack: string[];
   timeline: string;
+  cost?: string;
+  team?: string;
   questions: string[];
   created_at: string;
 }
@@ -98,9 +100,16 @@ export default function PublicBrief() {
           "twitter:description",
           `App scoping brief: ${data.idea.slice(0, 120)}...`,
         );
-      } catch (err: any) {
+      } catch (err: unknown) {
+        let isNotFoundError = false;
+
+        // Type guard to safely check if it's an Axios error and read the status
+        if (axios.isAxiosError(err)) {
+          isNotFoundError = err.response?.status === 404;
+        }
+
         setError(
-          err.response?.status === 404
+          isNotFoundError
             ? "This brief doesn't exist or has been made private."
             : "Failed to load brief — please try again.",
         );
@@ -387,7 +396,57 @@ export default function PublicBrief() {
             {brief.timeline}
           </span>
         </div>
+        {/* Cost */}
+        {brief.cost && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.6rem",
+              background: "#ffffff08",
+              border: "1px solid #ffffff15",
+              borderRadius: "100px",
+              padding: "0.5rem 1.1rem",
+              marginLeft: "0.5rem",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: "0.8rem",
+                color: "#ffffff50",
+              }}
+            >
+              {brief.cost}
+            </span>
+          </div>
+        )}
 
+        {/* Team */}
+        {brief.team && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.6rem",
+              background: "#ffffff08",
+              border: "1px solid #ffffff15",
+              borderRadius: "100px",
+              padding: "0.5rem 1.1rem",
+              marginLeft: "0.5rem",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: "0.8rem",
+                color: "#ffffff50",
+              }}
+            >
+              {brief.team}
+            </span>
+          </div>
+        )}
         {/* Features */}
         <Section label="Core features">
           <div

@@ -4,6 +4,7 @@ import Sidebar from "../components/app/Sidebar";
 import BriefInput from "../components/app/BriefInput";
 import BriefResult from "../components/app/BriefResult";
 import api from "../lib/api";
+import axios from "axios";
 
 export interface Brief {
   id: string;
@@ -13,6 +14,8 @@ export interface Brief {
   stack: string[];
   timeline: string;
   questions: string[];
+  cost: string; // add
+  team: string;
   is_public: boolean;
   explanation?: string | null;
   created_at: string;
@@ -70,17 +73,26 @@ export default function App() {
         features: brief.features,
         stack: brief.stack,
         timeline: brief.timeline,
+        cost: brief.cost, // add
+        team: brief.team,
         questions: brief.questions,
       });
       console.debug("saveBrief response:", res);
       const saved = { ...brief, id: res.data.brief.id };
       setBriefs((prev) => [saved, ...prev]);
       return saved;
-    } catch (error: any) {
-      console.log(
-        "brief not saved in db",
-        error.response?.data || error.message,
-      );
+    } catch (error: unknown) {
+      let errorDetails: unknown = "Unknown error";
+
+      if (axios.isAxiosError(error)) {
+        // TypeScript now knows this is an AxiosError
+        errorDetails = error.response?.data || error.message;
+      } else if (error instanceof Error) {
+        // Fallback for non-network errors (like a typo in your code)
+        errorDetails = error.message;
+      }
+
+      console.log("brief not saved in db", errorDetails);
       setBriefs((prev) => [brief, ...prev]);
       return brief;
     }
@@ -136,44 +148,55 @@ export default function App() {
   const handleLogout = () => {
     try {
       fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    } catch {}
-    navigate("/auth");
+    } catch (err: unknown) {
+      console.log("Logout request failed:", err);
+    } finally {
+      navigate("/auth");
+    }
   };
 
   const toggleShare = async (id: string) => {
-  // Optimistic update — flip immediately before API call
-  const currentBrief = briefs.find(b => b.id === id)
-  const optimisticState = !currentBrief?.is_public
+    // Optimistic update — flip immediately before API call
+    const currentBrief = briefs.find((b) => b.id === id);
+    const optimisticState = !currentBrief?.is_public;
 
-  setBriefs(prev => prev.map(b =>
-    b.id === id ? { ...b, is_public: optimisticState } : b
-  ))
-  if (activeBrief?.id === id) {
-    setActiveBrief(prev => prev ? { ...prev, is_public: optimisticState } : null)
-  }
-
-  try {
-    // Sync with actual server state
-    const res = await api.patch(`/app/brief/${id}/toggle-share`)
-    const serverState = res.data.is_public
-
-    setBriefs(prev => prev.map(b =>
-      b.id === id ? { ...b, is_public: serverState } : b
-    ))
+    setBriefs((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, is_public: optimisticState } : b)),
+    );
     if (activeBrief?.id === id) {
-      setActiveBrief(prev => prev ? { ...prev, is_public: serverState } : null)
+      setActiveBrief((prev) =>
+        prev ? { ...prev, is_public: optimisticState } : null,
+      );
     }
-  } catch (err) {
-    // Revert on error
-    setBriefs(prev => prev.map(b =>
-      b.id === id ? { ...b, is_public: !optimisticState } : b
-    ))
-    if (activeBrief?.id === id) {
-      setActiveBrief(prev => prev ? { ...prev, is_public: !optimisticState } : null)
+
+    try {
+      // Sync with actual server state
+      const res = await api.patch(`/app/brief/${id}/toggle-share`);
+      const serverState = res.data.is_public;
+
+      setBriefs((prev) =>
+        prev.map((b) => (b.id === id ? { ...b, is_public: serverState } : b)),
+      );
+      if (activeBrief?.id === id) {
+        setActiveBrief((prev) =>
+          prev ? { ...prev, is_public: serverState } : null,
+        );
+      }
+    } catch (err) {
+      // Revert on error
+      setBriefs((prev) =>
+        prev.map((b) =>
+          b.id === id ? { ...b, is_public: !optimisticState } : b,
+        ),
+      );
+      if (activeBrief?.id === id) {
+        setActiveBrief((prev) =>
+          prev ? { ...prev, is_public: !optimisticState } : null,
+        );
+      }
+      console.error("Failed to toggle share", err);
     }
-    console.error('Failed to toggle share', err)
-  }
-}
+  };
 
   return (
     // Don't render app until auth check completes
