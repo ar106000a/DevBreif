@@ -2,7 +2,7 @@ import axios from "axios";
 import type { AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
 
 const BASE_URL =
-  import.meta.env.VITE_API_URL || "https://devbrief-backend.onrender.com/";
+  "";
 
 // ─── Axios instance ───────────────────────────────────────────
 const api = axios.create({
