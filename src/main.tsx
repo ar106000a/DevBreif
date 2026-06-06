@@ -21,7 +21,7 @@ createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/" element={<RootDispatcher />} />
         <Route element={<PrivateRoute />}>
-          <Route path="/app" element={<AppPage />} />
+          <Route path="/" element={<AppPage />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
         <Route element={<PublicRoute />}>
