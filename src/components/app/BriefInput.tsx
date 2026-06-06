@@ -22,7 +22,6 @@ const EXAMPLES = [
 const SAFETY_CAP = 5; // max user replies after initial idea
 
 export default function BriefInput({
-  loading,
   setLoading,
   onGenerated,
 }: BriefInputProps) {
@@ -106,9 +105,6 @@ export default function BriefInput({
 
   // ─── Step 2: Send to followup (typed or quick confirm) ────────
 
-
-  
-
   // ─── Step 3: Generate brief ───────────────────────────────────
   const generateBrief = async (summary: string, chatHistory: ChatMessage[]) => {
     setStage("generating");
@@ -167,7 +163,7 @@ export default function BriefInput({
 
       if (data.ready) {
         const aiMsg = "Got everything I need — generating your brief now...";
-        const finalHistory:ChatMessage[] = [
+        const finalHistory: ChatMessage[] = [
           ...updatedMessages,
           { role: "ai", content: aiMsg },
         ];
@@ -218,7 +214,10 @@ export default function BriefInput({
       updatedMessages.filter((m) => m.role === "user").length - 1;
     if (userReplies >= SAFETY_CAP) {
       const aiMsg = "Got everything I need — generating your brief now...";
-      const finalHistory:ChatMessage[] = [...updatedMessages, { role: "ai", content: aiMsg }];
+      const finalHistory: ChatMessage[] = [
+        ...updatedMessages,
+        { role: "ai", content: aiMsg },
+      ];
       setMessages(finalHistory);
       setAiThinking(false);
       await generateBrief(idea.trim(), finalHistory);
@@ -234,7 +233,7 @@ export default function BriefInput({
 
       if (data.ready) {
         const aiMsg = "Got everything I need — generating your brief now...";
-        const finalHistory:ChatMessage[] = [
+        const finalHistory: ChatMessage[] = [
           ...updatedMessages,
           { role: "ai", content: aiMsg },
         ];
