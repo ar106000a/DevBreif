@@ -1,10 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/app/Sidebar";
+import TopBar from "../components/app/Topbar";
 import BriefInput from "../components/app/BriefInput";
 import BriefResult from "../components/app/BriefResult";
+import { useBriefs } from "../hooks/useBriefs";
 import api from "../lib/api";
-import axios from "axios";
+
+export interface ChatMessage {
+  role: "user" | "ai";
+  content: string;
+}
 
 export interface Brief {
   id: string;
@@ -14,116 +20,42 @@ export interface Brief {
   stack: string[];
   timeline: string;
   questions: string[];
-  cost: string; 
+  cost: string;
   team: string;
   is_public: boolean;
   explanation?: string | null;
   created_at: string;
+  description: string;
+  risks: string[];
+  chat_history?: ChatMessage[];
+  project_type?: "product" | "personal" | "data" | "system";
 }
 
 type AppView = "input" | "result";
 
 export default function App() {
   const navigate = useNavigate();
-  const [briefs, setBriefs] = useState<Brief[]>([]);
+  const {
+    briefs,
+    loadingBriefs,
+    saveBrief,
+    deleteBrief,
+    toggleShare,
+    updateExplanation,
+  } = useBriefs();
+
   const [activeBrief, setActiveBrief] = useState<Brief | null>(null);
   const [view, setView] = useState<AppView>("input");
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [loadingBriefs, setLoadingBriefs] = useState(true);
-  const [authChecking, setAuthChecking] = useState(true);
 
-  // Auth guard: verify session via refresh endpoint (httpOnly cookies)
-  useEffect(() => {
-    let isMounted = true;
-    const check = async () => {
-      try {
-        // Double check: Ensure your '../lib/api' file has `withCredentials: true` set globally!
-        await api.post("/api/auth/refresh");
-        if (isMounted) setAuthChecking(false);
-      } catch (err) {
-        console.error("Auth verification failed:", err);
-        if (isMounted) navigate("/auth");
-      }
-    };
-    check();
-    return () => { isMounted = false; };
-  }, [navigate]);
-
-  // Fetch saved briefs - DEPENDENCY ARRAY FIXED
-  // Only attempts to fetch once auth checking completes successfully
-  useEffect(() => {
-    if (authChecking) return; 
-
-    let isMounted = true;
-    const fetchBriefs = async () => {
-      setLoadingBriefs(true);
-      try {
-        const res = await api.get("/app/brief/list");
-        console.debug("fetchBriefs response:", res);
-        if (isMounted) setBriefs(res.data?.briefs ?? []);
-      } catch (err) {
-        console.error("Error fetching briefs:", err);
-        if (isMounted) setBriefs([]);
-      } finally {
-        if (isMounted) setLoadingBriefs(false);
-      }
-    };
-
-    fetchBriefs();
-    return () => { isMounted = false; };
-  }, [authChecking]); // authChecking added here clears the missing dependency lint warning safely
-
-  const saveBrief = async (brief: Brief) => {
+  const handleLogout = async () => {
     try {
-      const res = await api.post("/app/brief/save", {
-        title: brief.title,
-        idea: brief.idea,
-        features: brief.features,
-        stack: brief.stack,
-        timeline: brief.timeline,
-        cost: brief.cost, 
-        team: brief.team,
-        questions: brief.questions,
-      });
-      console.debug("saveBrief response:", res);
-      const saved = { ...brief, id: res.data.brief.id };
-      setBriefs((prev) => [saved, ...prev]);
-      return saved;
-    } catch (error: unknown) {
-      let errorDetails: unknown = "Unknown error";
-
-      if (axios.isAxiosError(error)) {
-        errorDetails = error.response?.data || error.message;
-      } else if (error instanceof Error) {
-        errorDetails = error.message;
-      }
-
-      console.log("brief not saved in db", errorDetails);
-      setBriefs((prev) => [brief, ...prev]);
-      return brief;
-    }
-  };
-
-  const handleExplanationGenerated = (id: string, explanation: string) => {
-    setBriefs((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, explanation } : b)),
-    );
-    if (activeBrief?.id === id) {
-      setActiveBrief((prev) => (prev ? { ...prev, explanation } : null));
-    }
-  };
-
-  const deleteBrief = async (id: string) => {
-    try {
-      await api.delete(`/api/brief/${id}`);
-      setBriefs((prev) => prev.filter((b) => b.id !== id));
-      if (activeBrief?.id === id) {
-        setActiveBrief(null);
-        setView("input");
-      }
-    } catch {
-      console.error("Failed to delete brief");
+      await api.post("/api/auth/logout");
+    } catch (err) {
+      console.log("Logout request failed:", err);
+    } finally {
+      navigate("/auth");
     }
   };
 
@@ -136,290 +68,108 @@ export default function App() {
   const handleSelectBrief = (brief: Brief) => {
     setActiveBrief(brief);
     setView("result");
-    if (window.innerWidth <= 768) {
-      setSidebarOpen(false);
-    }
+    if (window.innerWidth <= 768) setSidebarOpen(false);
   };
 
   const handleNewBrief = () => {
     setActiveBrief(null);
     setView("input");
-    if (window.innerWidth <= 768) {
-      setSidebarOpen(false);
+    if (window.innerWidth <= 768) setSidebarOpen(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    const deleted = await deleteBrief(id);
+    if (deleted && activeBrief?.id === id) {
+      setActiveBrief(null);
+      setView("input");
     }
   };
 
-  const handleLogout = () => {
-    try {
-      // Production fix: Added credentials field here explicitly too
-      fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    } catch (err: unknown) {
-      console.log("Logout request failed:", err);
-    } finally {
-      navigate("/auth");
-    }
-  };
-
-  const toggleShare = async (id: string) => {
-    const currentBrief = briefs.find((b) => b.id === id);
-    const optimisticState = !currentBrief?.is_public;
-
-    setBriefs((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, is_public: optimisticState } : b)),
-    );
+  const handleToggleShare = async (id: string) => {
+    const newState = await toggleShare(id);
     if (activeBrief?.id === id) {
       setActiveBrief((prev) =>
-        prev ? { ...prev, is_public: optimisticState } : null,
+        prev ? { ...prev, is_public: newState } : null,
       );
-    }
-
-    try {
-      const res = await api.patch(`/app/brief/${id}/toggle-share`);
-      const serverState = res.data.is_public;
-
-      setBriefs((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, is_public: serverState } : b)),
-      );
-      if (activeBrief?.id === id) {
-        setActiveBrief((prev) =>
-          prev ? { ...prev, is_public: serverState } : null,
-        );
-      }
-    } catch (err) {
-      setBriefs((prev) =>
-        prev.map((b) =>
-          b.id === id ? { ...b, is_public: !optimisticState } : b,
-        ),
-      );
-      if (activeBrief?.id === id) {
-        setActiveBrief((prev) =>
-          prev ? { ...prev, is_public: !optimisticState } : null,
-        );
-      }
-      console.error("Failed to toggle share", err);
     }
   };
 
-
+  const handleExplanationGenerated = (id: string, explanation: string) => {
+    updateExplanation(id, explanation);
+    if (activeBrief?.id === id) {
+      setActiveBrief((prev) => (prev ? { ...prev, explanation } : null));
+    }
+  };
 
   return (
-    // Don't render app until auth check completes
-    authChecking ? null : (
-      <div
+    <div
+      style={{
+        display: "flex",
+        height: "100vh",
+        overflow: "hidden",
+        background: "#080808",
+        fontFamily: "'DM Sans', sans-serif",
+        color: "#ffffff",
+        position: "relative",
+      }}
+    >
+      <Sidebar
+        briefs={briefs}
+        activeBriefId={activeBrief?.id ?? null}
+        loading={loadingBriefs}
+        open={sidebarOpen}
+        onToggle={() => setSidebarOpen(false)}
+        onSelect={handleSelectBrief}
+        onDelete={handleDelete}
+        onNewBrief={handleNewBrief}
+        onLogout={handleLogout}
+      />
+
+      <main
         style={{
+          flex: 1,
+          overflow: "auto",
           display: "flex",
-          height: "100vh",
-          overflow: "hidden",
-          background: "#080808",
-          fontFamily: "'DM Sans', sans-serif",
-          color: "#ffffff",
-          position: "relative",
+          flexDirection: "column",
+          transition: "all 0.25s ease",
+          width: "100%",
         }}
       >
-        {/* Sidebar */}
-        <Sidebar
-          briefs={briefs}
-          activeBriefId={activeBrief?.id ?? null}
-          loading={loadingBriefs}
-          open={sidebarOpen}
-          onToggle={() => setSidebarOpen(false)} // Toggled closed via backdrop click
-          onSelect={handleSelectBrief}
-          onDelete={deleteBrief}
+        <TopBar
+          sidebarOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen((prev) => !prev)}
+          activeBrief={activeBrief}
+          view={view}
           onNewBrief={handleNewBrief}
-          onLogout={handleLogout}
         />
 
-        {/* Main area */}
-        <main
+        <div
           style={{
             flex: 1,
-            overflow: "auto",
-            display: "flex",
-            flexDirection: "column",
-            transition: "all 0.25s ease",
-            width: "100%", // Explicitly take up remaining width
+            padding: "max(1.5rem, 5vw) max(1rem, 5vw)",
+            maxWidth: "780px",
+            width: "100%",
+            margin: "0 auto",
+            boxSizing: "border-box",
           }}
         >
-          {/* Top bar */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              padding: "1rem 1.25rem", // slightly less padding for smaller screens
-              borderBottom: "1px solid #ffffff0f",
-              position: "sticky",
-              top: 0,
-              background: "#080808ee",
-              backdropFilter: "blur(12px)",
-              zIndex: 10,
-            }}
-          >
-            {/* Sidebar toggle */}
-            <button
-              onClick={() => setSidebarOpen((prev) => !prev)}
-              style={{
-                background: "transparent",
-                border: "1px solid #ffffff15",
-                borderRadius: "6px",
-                padding: "0.4rem 0.6rem",
-                cursor: "pointer",
-                color: "#ffffff50",
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#ffffff30";
-                e.currentTarget.style.color = "#ffffff";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#ffffff15";
-                e.currentTarget.style.color = "#ffffff50";
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect
-                  x="2"
-                  y="4"
-                  width="12"
-                  height="1.5"
-                  rx="1"
-                  fill="currentColor"
-                />
-                <rect
-                  x="2"
-                  y="7.25"
-                  width="12"
-                  height="1.5"
-                  rx="1"
-                  fill="currentColor"
-                />
-                <rect
-                  x="2"
-                  y="10.5"
-                  width="12"
-                  height="1.5"
-                  rx="1"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
-
-            {/* Logo (Hide on very small screens to make room for breadcrumb) */}
-            <span
-              className="app-logo"
-              onClick={() => {
-                navigate("/app");
-              }}
-              style={{
-                fontFamily: "'Syne', sans-serif",
-                fontSize: "1.1rem",
-                fontWeight: 800,
-                letterSpacing: "-0.02em",
-                cursor: "pointer",
-              }}
-            >
-              dev<span style={{ color: "#CBFF5E" }}>brief</span>
-            </span>
-
-            <style>{`
-            @media (max-width: 480px) {
-              .app-logo { display: none; } 
-            }
-          `}</style>
-
-            {/* Breadcrumb */}
-            {activeBrief && view === "result" && (
-              <>
-                <span style={{ color: "#ffffff20", fontSize: "0.85rem" }}>
-                  /
-                </span>
-                <span
-                  style={{
-                    fontSize: "0.85rem",
-                    color: "#ffffff50",
-                    fontFamily: "'DM Mono', monospace",
-                    maxWidth: "clamp(100px, 30vw, 300px)", // Responsive max-width
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {activeBrief.title}
-                </span>
-              </>
-            )}
-
-            {/* New brief button — right side */}
-            {view === "result" && (
-              <div style={{ marginLeft: "auto" }}>
-                <button
-                  onClick={handleNewBrief}
-                  style={{
-                    background: "#CBFF5E",
-                    color: "#080808",
-                    border: "none",
-                    padding: "0.5rem 1rem",
-                    borderRadius: "6px",
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontWeight: 500,
-                    fontSize: "0.85rem",
-                    cursor: "pointer",
-                    transition: "opacity 0.2s",
-                    whiteSpace: "nowrap",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
-                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-                >
-                  {/* Remove the inline display: none from here */}
-                  <span className="btn-text-full">+ New brief</span>
-                  <span className="btn-text-short">+</span>
-                </button>
-
-                <style>{`
-                /* Hide the short text by default using CSS, not inline styles */
-                .btn-text-short { display: none; }
-                
-                @media (max-width: 480px) {
-                  .btn-text-full { display: none; }
-                  .btn-text-short { display: inline; }
-                }
-              `}</style>
-              </div>
-            )}
-          </div>
-
-          {/* Content */}
-          <div
-            style={{
-              flex: 1,
-              padding: "max(1.5rem, 5vw) max(1rem, 5vw)", // Responsive padding
-              maxWidth: "780px",
-              width: "100%",
-              margin: "0 auto",
-              boxSizing: "border-box",
-            }}
-          >
-            {view === "input" && (
-              <BriefInput
-                loading={loading}
-                setLoading={setLoading}
-                onGenerated={handleGenerated}
-              />
-            )}
-            {view === "result" && activeBrief && (
-              <BriefResult
-                brief={activeBrief}
-                onNewBrief={handleNewBrief}
-                onToggleShare={toggleShare}
-                onExplanationGenerated={handleExplanationGenerated}
-              />
-            )}
-          </div>
-        </main>
-      </div>
-    )
+          {view === "input" && (
+            <BriefInput
+              loading={loading}
+              setLoading={setLoading}
+              onGenerated={handleGenerated}
+            />
+          )}
+          {view === "result" && activeBrief && (
+            <BriefResult
+              brief={activeBrief}
+              onNewBrief={handleNewBrief}
+              onToggleShare={handleToggleShare}
+              onExplanationGenerated={handleExplanationGenerated}
+            />
+          )}
+        </div>
+      </main>
+    </div>
   );
 }

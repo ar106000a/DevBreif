@@ -4,12 +4,11 @@ import BlueprintDialog from "./BlueprintDialog";
 import { useState } from "react";
 import ShareToggle from "./ShareToggle";
 
-// Add inside BriefResult props interface:
 interface BriefResultProps {
   brief: Brief;
   onNewBrief: () => void;
   onToggleShare: (id: string) => void;
-  onExplanationGenerated: (id: string, explanation: string) => void; // add
+  onExplanationGenerated: (id: string, explanation: string) => void;
 }
 
 const Section = ({
@@ -36,6 +35,40 @@ const Section = ({
   </div>
 );
 
+// Labels that change based on project type
+const getLabels = (type?: string) => {
+  switch (type) {
+    case "personal":
+      return {
+        badge: "Personal Project",
+        features: "What it will do",
+        questions: "Things to figure out",
+        cta: "Ready to build? Get started.",
+      };
+    case "system":
+      return {
+        badge: "System / Infrastructure",
+        features: "System capabilities",
+        questions: "Things to figure out",
+        cta: "Ready to build? Get started.",
+      };
+    case "data":
+      return {
+        badge: "Data / ML Project",
+        features: "What it will do",
+        questions: "Things to figure out",
+        cta: "Ready to build? Get started.",
+      };
+    default:
+      return {
+        badge: null,
+        features: "Core features",
+        questions: "Questions to ask your developer",
+        cta: "Ready to build? Share this brief with your developer.",
+      };
+  }
+};
+
 export default function BriefResult({
   brief,
   onNewBrief,
@@ -43,6 +76,8 @@ export default function BriefResult({
   onToggleShare,
 }: BriefResultProps) {
   const [showBlueprint, setShowBlueprint] = useState(false);
+  const labels = getLabels(brief.project_type);
+
   return (
     <div style={{ maxWidth: "680px", margin: "0 auto" }}>
       {/* Header */}
@@ -59,14 +94,39 @@ export default function BriefResult({
         <div>
           <div
             style={{
-              fontFamily: "'DM Mono', monospace",
-              fontSize: "0.72rem",
-              color: "#CBFF5E60",
-              letterSpacing: "0.05em",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
               marginBottom: "0.4rem",
             }}
           >
-            BRIEF GENERATED
+            <div
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: "0.72rem",
+                color: "#CBFF5E60",
+                letterSpacing: "0.05em",
+              }}
+            >
+              BRIEF GENERATED
+            </div>
+            {/* Project type badge */}
+            {labels.badge && (
+              <div
+                style={{
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: "0.65rem",
+                  color: "#ffffff30",
+                  background: "#ffffff08",
+                  border: "1px solid #ffffff12",
+                  borderRadius: "100px",
+                  padding: "0.15rem 0.6rem",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {labels.badge}
+              </div>
+            )}
           </div>
           <h1
             style={{
@@ -97,14 +157,11 @@ export default function BriefResult({
           </div>
         </div>
 
-        {/* Share toggle */}
         <ShareToggle
           briefId={brief.id}
           isPublic={brief.is_public}
           onToggle={onToggleShare}
         />
-
-        {/* Export */}
         <ExportMenu brief={brief} />
       </div>
 
@@ -115,7 +172,7 @@ export default function BriefResult({
           border: "1px solid #ffffff0f",
           borderRadius: "10px",
           padding: "1rem 1.25rem",
-          marginBottom: "2rem",
+          marginBottom: "1rem",
         }}
       >
         <div
@@ -144,152 +201,178 @@ export default function BriefResult({
         </p>
       </div>
 
-      {/* Timeline pill — prominent */}
+      {/* Description */}
+      {brief.description && (
+        <div style={{ marginBottom: "2rem", padding: "0 0.25rem" }}>
+          <p
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: "0.95rem",
+              color: "#ffffff50",
+              margin: 0,
+              lineHeight: 1.7,
+              fontWeight: 300,
+            }}
+          >
+            {brief.description}
+          </p>
+        </div>
+      )}
+
+      {/* Pills row */}
       <div
         style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "0.6rem",
-          background: "#CBFF5E12",
-          border: "1px solid #CBFF5E30",
-          borderRadius: "100px",
-          padding: "0.5rem 1.1rem",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "0.5rem",
           marginBottom: "2rem",
         }}
       >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <circle cx="7" cy="7" r="5.5" stroke="#CBFF5E" strokeWidth="1.2" />
-          <path
-            d="M7 4.5V7l1.5 1.5"
-            stroke="#CBFF5E"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-          />
-        </svg>
-        <span
-          style={{
-            fontFamily: "'DM Mono', monospace",
-            fontSize: "0.8rem",
-            color: "#CBFF5E",
-            letterSpacing: "0.02em",
-          }}
-        >
-          {brief.timeline}
-        </span>
-      </div>
-      
-      {/* Cost */}
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "0.6rem",
-          background: "#ffffff08",
-          border: "1px solid #ffffff15",
-          borderRadius: "100px",
-          padding: "0.5rem 1.1rem",
-        }}
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <circle cx="7" cy="7" r="5.5" stroke="#ffffff40" strokeWidth="1.2" />
-          <path
-            d="M7 4v1M7 9v1M5.5 8a1.5 1.5 0 003 0c0-.83-.67-1.5-1.5-1.5S5.5 6.83 5.5 6a1.5 1.5 0 013 0"
-            stroke="#ffffff40"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-          />
-        </svg>
-        <span
-          style={{
-            fontFamily: "'DM Mono', monospace",
-            fontSize: "0.8rem",
-            color: "#ffffff50",
-          }}
-        >
-          {brief.cost}
-        </span>
-      </div>
+        {/* Timeline */}
+        {brief.timeline && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.6rem",
+              background: "#CBFF5E12",
+              border: "1px solid #CBFF5E30",
+              borderRadius: "100px",
+              padding: "0.5rem 1.1rem",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="5.5" stroke="#CBFF5E" strokeWidth="1.2" />
+              <path
+                d="M7 4.5V7l1.5 1.5"
+                stroke="#CBFF5E"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: "0.8rem",
+                color: "#CBFF5E",
+                letterSpacing: "0.02em",
+              }}
+            >
+              {brief.timeline}
+            </span>
+          </div>
+        )}
 
-      {/* Team */}
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "0.6rem",
-          background: "#ffffff08",
-          border: "1px solid #ffffff15",
-          borderRadius: "100px",
-          padding: "0.5rem 1.1rem",
-        }}
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <circle cx="5" cy="4" r="2" stroke="#ffffff40" strokeWidth="1.2" />
-          <circle cx="9" cy="4" r="2" stroke="#ffffff40" strokeWidth="1.2" />
-          <path
-            d="M1 11c0-2.21 1.79-4 4-4s4 1.79 4 4"
-            stroke="#ffffff40"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M9 7c1.66 0 3 1.34 3 3"
-            stroke="#ffffff40"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-          />
-        </svg>
-        <span
+        {/* Cost / Investment */}
+        {brief.cost && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.6rem",
+              background: "#ffffff08",
+              border: "1px solid #ffffff15",
+              borderRadius: "100px",
+              padding: "0.5rem 1.1rem",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="5.5" stroke="#ffffff40" strokeWidth="1.2" />
+              <path
+                d="M7 4v1M7 9v1M5.5 8a1.5 1.5 0 003 0c0-.83-.67-1.5-1.5-1.5S5.5 6.83 5.5 6a1.5 1.5 0 013 0"
+                stroke="#ffffff40"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: "0.8rem",
+                color: "#ffffff50",
+              }}
+            >
+              {brief.cost}
+            </span>
+          </div>
+        )}
+
+        {/* Team / Skills */}
+        {brief.team && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.6rem",
+              background: "#ffffff08",
+              border: "1px solid #ffffff15",
+              borderRadius: "100px",
+              padding: "0.5rem 1.1rem",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="5" cy="4" r="2" stroke="#ffffff40" strokeWidth="1.2" />
+              <circle cx="9" cy="4" r="2" stroke="#ffffff40" strokeWidth="1.2" />
+              <path
+                d="M1 11c0-2.21 1.79-4 4-4s4 1.79 4 4"
+                stroke="#ffffff40"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
+              <path
+                d="M9 7c1.66 0 3 1.34 3 3"
+                stroke="#ffffff40"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: "0.8rem",
+                color: "#ffffff50",
+              }}
+            >
+              {brief.team}
+            </span>
+          </div>
+        )}
+
+        {/* Blueprint button */}
+        <button
+          onClick={() => setShowBlueprint(true)}
           style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            background: "transparent",
+            border: "1px solid #CBFF5E30",
+            borderRadius: "100px",
+            padding: "0.5rem 1.1rem",
             fontFamily: "'DM Mono', monospace",
-            fontSize: "0.8rem",
-            color: "#ffffff50",
+            fontSize: "0.78rem",
+            color: "#CBFF5E80",
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#CBFF5E12";
+            e.currentTarget.style.color = "#CBFF5E";
+            e.currentTarget.style.borderColor = "#CBFF5E60";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "#CBFF5E80";
+            e.currentTarget.style.borderColor = "#CBFF5E30";
           }}
         >
-          {brief.team}
-        </span>
+          ✦ Get Blueprint
+        </button>
       </div>
-
-      {/*blueprint button*/}
-      <button
-        onClick={() => setShowBlueprint(true)}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          background: "transparent",
-          border: "1px solid #CBFF5E30",
-          borderRadius: "100px",
-          padding: "0.5rem 1.1rem",
-          fontFamily: "'DM Mono', monospace",
-          fontSize: "0.78rem",
-          color: "#CBFF5E80",
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-          marginLeft: "0.5rem",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "#CBFF5E12";
-          e.currentTarget.style.color = "#CBFF5E";
-          e.currentTarget.style.borderColor = "#CBFF5E60";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "transparent";
-          e.currentTarget.style.color = "#CBFF5E80";
-          e.currentTarget.style.borderColor = "#CBFF5E30";
-        }}
-      >
-        ✦ Get Blueprint
-      </button>
 
       {/* Features */}
-      <Section label="Core features">
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.5rem",
-          }}
-        >
+      <Section label={labels.features}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
           {brief.features.map((feature, i) => (
             <div
               key={i}
@@ -339,13 +422,7 @@ export default function BriefResult({
 
       {/* Stack */}
       <Section label="Suggested stack">
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "0.5rem",
-          }}
-        >
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
           {brief.stack.map((tech, i) => (
             <div
               key={i}
@@ -378,7 +455,7 @@ export default function BriefResult({
       </Section>
 
       {/* Questions */}
-      <Section label="Questions to ask your developer">
+      <Section label={labels.questions}>
         <div
           style={{
             background: "#111111",
@@ -435,6 +512,61 @@ export default function BriefResult({
         </div>
       </Section>
 
+      {/* Risks */}
+      {brief.risks && brief.risks.length > 0 && (
+        <Section label="Risks to consider">
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {brief.risks.map((risk, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "0.75rem",
+                  background: "#ff5f5606",
+                  border: "1px solid #ff5f5615",
+                  borderLeft: "3px solid #ff5f5640",
+                  borderRadius: "8px",
+                  padding: "0.75rem 1rem",
+                  transition: "border-color 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#ff5f5630";
+                  e.currentTarget.style.borderLeftColor = "#ff5f5670";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#ff5f5615";
+                  e.currentTarget.style.borderLeftColor = "#ff5f5640";
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: "0.72rem",
+                    color: "#ff5f5670",
+                    minWidth: "20px",
+                    paddingTop: "1px",
+                  }}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: "0.9rem",
+                    color: "#ffffff60",
+                    lineHeight: 1.55,
+                    fontWeight: 300,
+                  }}
+                >
+                  {risk}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
       {showBlueprint && (
         <BlueprintDialog
           brief={brief}
@@ -444,6 +576,7 @@ export default function BriefResult({
           }}
         />
       )}
+
       {/* Bottom CTA */}
       <div
         style={{
@@ -464,7 +597,7 @@ export default function BriefResult({
             fontWeight: 300,
           }}
         >
-          Ready to build? Share this brief with your developer.
+          {labels.cta}
         </div>
         <button
           onClick={onNewBrief}

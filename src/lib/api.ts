@@ -1,10 +1,15 @@
 import axios from "axios";
 import type { AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
 
-const BASE_URL =
-  import.meta.env.NODE_ENV === "development" ? "http://localhost:5000" : "";
+let BASE_URL = "";
+if (import.meta.env.VITE_NODE_ENV === "development") {
+  BASE_URL = import.meta.env.VITE_API_URL;
+}
+if (import.meta.env.VITE_NODE_ENV === "production") {
+  BASE_URL = "";
+}
 
-// ─── Axios instance ───────────────────────────────────────────
+// Axios instance
 const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true, // sends cookies automatically (refresh token)
@@ -49,6 +54,16 @@ api.interceptors.response.use(
 
     // Not a 401 or already retried — just reject
     if (error.response?.status !== 401 || originalRequest._retry) {
+      return Promise.reject(error);
+    }
+    const url = originalRequest.url ?? "";
+    const isAuthEndpoint =
+      url.includes("/api/auth/login") ||
+      url.includes("/api/auth/register") ||
+      url.includes("/api/auth/confirm_email") ||
+      url.includes("/api/auth/password");
+
+    if (isAuthEndpoint) {
       return Promise.reject(error);
     }
 

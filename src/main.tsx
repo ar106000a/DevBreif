@@ -1,23 +1,44 @@
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./index.css";
-import LandingWrapper from "./LandingWrapper"; // Imported here
 import AppPage from "./pages/App";
-import Auth from "./pages/Auth";
 import PublicBrief from "./pages/PublicBrief";
 import Settings from "./pages/Settings";
+import { PrivateRoute, PublicRoute } from "./components/Guards";
+import { RootDispatcher } from "./pages/RootDispatcher";
+import AuthLayout from "./pages/Auth/AuthLayout";
+import LoginForm from "./pages/Auth/LoginForm";
+import { AuthProvider } from "./context/AuthContext";
+import RegisterForm from "./pages/Auth/RegisterForm";
+import VerifyForm from "./pages/Auth/VerifyForm";
+import ForgotForm from "./pages/Auth/ForgotForm";
+import ResetVerifyForm from "./pages/Auth/ResetVerifyForm";
+import ResetPasswordForm from "./pages/Auth/ResetPasswordForm";
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <BrowserRouter>
+  <BrowserRouter>
+    <AuthProvider>
       <Routes>
-        <Route path="/" element={<LandingWrapper />} />
-        <Route path="/app" element={<AppPage />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/brief/:id" element={<PublicBrief />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/" element={<RootDispatcher />} />
+        <Route element={<PrivateRoute />}>
+          <Route path="/app" element={<AppPage />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
+        <Route element={<PublicRoute />}>
+          <Route path="/auth" element={<AuthLayout />}>
+            <Route index element={<LoginForm />} />
+            <Route path="/auth/register" element={<RegisterForm />} />
+            <Route path="/auth/verify" element={<VerifyForm />} />
+            <Route path="/auth/forgot" element={<ForgotForm />} />
+            <Route path="/auth/reset-verify" element={<ResetVerifyForm />} />
+            <Route
+              path="/auth/reset-password"
+              element={<ResetPasswordForm />}
+            />
+          </Route>
+          <Route path="/brief/:id" element={<PublicBrief />} />
+        </Route>
       </Routes>
-    </BrowserRouter>
-  </StrictMode>,
+    </AuthProvider>
+  </BrowserRouter>,
 );

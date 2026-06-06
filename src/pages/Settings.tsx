@@ -55,49 +55,25 @@ export default function Settings() {
 
   useEffect(() => {
     let isMounted = true;
-    let token = null;
-
-    // Wrap in try-catch: Mobile Safari in Private Mode sometimes blocks localStorage access
-    try {
-      token = localStorage.getItem("token");
-    } catch {
-      console.warn("LocalStorage access denied");
-    }
-
-    if (!token) {
-      navigate("/auth");
-      return;
-    }
 
     const fetchUser = async () => {
       setLoadingUser(true);
       try {
         const res = await api.get("/app/user/me");
-
-        // Only update state if the component is still mounted
         if (isMounted) {
           setUser(res.data.user);
           setUsername(res.data.user.username);
           setAvatarPreview(res.data.user.avatar_url);
         }
       } catch {
-        if (isMounted) {
-          // CRITICAL FIX: Destroy the invalid token before navigating.
-          // Otherwise, /auth will see the token and redirect right back here!
-          localStorage.removeItem("token");
-          navigate("/auth");
-        }
+        // 401s are handled by the axios interceptor in api.ts
+        // which will redirect to /auth automatically
       } finally {
-        if (isMounted) {
-          setLoadingUser(false);
-        }
+        if (isMounted) setLoadingUser(false);
       }
     };
 
     fetchUser();
-
-    // Cleanup function prevents state updates on unmounted components
-    // during React 18 Strict Mode's double-mount.
     return () => {
       isMounted = false;
     };
@@ -220,15 +196,13 @@ export default function Settings() {
       await api.delete("/app/user/delete", {
         data: { password: deletePassword },
       });
-      localStorage.removeItem("token");
-      navigate("/auth");
+      // Full reload so AuthProvider re-runs silentRefresh on deleted account
+      window.location.href = "/auth";
     } catch (err: unknown) {
-      // Fix: any -> unknown error handling
       const message =
         axios.isAxiosError(err) && err.response?.data?.message
           ? err.response.data.message
           : "Failed to delete account";
-
       setDeleteError(message);
     } finally {
       setDeleteLoading(false);
@@ -266,8 +240,110 @@ export default function Settings() {
       }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap');
-      `}</style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap');
+    
+    @keyframes spin { 
+      to { transform: rotate(360deg); } 
+    }
+
+    /* Base Layout Classes */
+    .settings-layout {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 2rem;
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 3rem;
+      align-items: start;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 5rem;
+    }
+
+    .sidebar-nav {
+      display: block;
+    }
+
+    .sidebar-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      margin-bottom: 2px;
+    }
+
+    .username-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .danger-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+      .settings-layout {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        padding: 2rem 1.25rem;
+      }
+      
+      .sidebar {
+        position: static;
+      }
+      
+      .sidebar-title {
+        margin-bottom: 0.75rem !important;
+      }
+      
+      .sidebar-nav {
+        display: flex;
+        overflow-x: auto;
+        gap: 0.5rem;
+        padding-bottom: 0.5rem;
+        /* Hide scrollbar for a cleaner look */
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      
+      .sidebar-nav::-webkit-scrollbar {
+        display: none;
+      }
+      
+      .sidebar-btn {
+        display: inline-block;
+        width: auto;
+        margin-bottom: 0;
+        white-space: nowrap;
+      }
+      
+      .username-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .username-row > div:last-child {
+        padding-top: 0 !important;
+      }
+      
+      .username-row button,
+      .danger-actions button {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .danger-actions {
+        flex-direction: column;
+      }
+      .password-action-wrapper button {
+         width: 100%;
+      }
+    }
+  `}</style>
 
       {/* Nav */}
       <nav
@@ -321,20 +397,11 @@ export default function Settings() {
         </span>
       </nav>
 
-      <div
-        style={{
-          maxWidth: "720px",
-          margin: "0 auto",
-          padding: "3rem 2rem",
-          display: "grid",
-          gridTemplateColumns: "180px 1fr",
-          gap: "3rem",
-          alignItems: "start",
-        }}
-      >
+      <div className="settings-layout">
         {/* Sidebar nav */}
-        <div style={{ position: "sticky", top: "5rem" }}>
+        <div className="sidebar">
           <div
+            className="sidebar-title"
             style={{
               fontFamily: "'DM Mono', monospace",
               fontSize: "0.68rem",
@@ -346,51 +413,50 @@ export default function Settings() {
           >
             Settings
           </div>
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveSection(item.id)}
-              style={{
-                display: "block",
-                width: "100%",
-                textAlign: "left",
-                padding: "0.55rem 0.75rem",
-                borderRadius: "7px",
-                border: "none",
-                background:
-                  activeSection === item.id ? "#ffffff0f" : "transparent",
-                color:
-                  activeSection === item.id
-                    ? item.id === "danger"
-                      ? "#ff5f56"
-                      : "#ffffff"
-                    : item.id === "danger"
-                      ? "#ff5f5660"
-                      : "#ffffff40",
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: "0.88rem",
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-                marginBottom: "2px",
-              }}
-              onMouseEnter={(e) => {
-                if (activeSection !== item.id) {
-                  e.currentTarget.style.background = "#ffffff08";
-                  e.currentTarget.style.color =
-                    item.id === "danger" ? "#ff5f56" : "#ffffff70";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (activeSection !== item.id) {
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.color =
-                    item.id === "danger" ? "#ff5f5660" : "#ffffff40";
-                }
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
+          <div className="sidebar-nav">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                className="sidebar-btn"
+                onClick={() => setActiveSection(item.id)}
+                style={{
+                  padding: "0.55rem 0.75rem",
+                  borderRadius: "7px",
+                  border: "none",
+                  background:
+                    activeSection === item.id ? "#ffffff0f" : "transparent",
+                  color:
+                    activeSection === item.id
+                      ? item.id === "danger"
+                        ? "#ff5f56"
+                        : "#ffffff"
+                      : item.id === "danger"
+                        ? "#ff5f5660"
+                        : "#ffffff40",
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: "0.88rem",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  if (activeSection !== item.id) {
+                    e.currentTarget.style.background = "#ffffff08";
+                    e.currentTarget.style.color =
+                      item.id === "danger" ? "#ff5f56" : "#ffffff70";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeSection !== item.id) {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color =
+                      item.id === "danger" ? "#ff5f5660" : "#ffffff40";
+                  }
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Content */}
@@ -567,13 +633,7 @@ export default function Settings() {
                 >
                   USERNAME
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "0.75rem",
-                    alignItems: "flex-start",
-                  }}
-                >
+                <div className="username-row">
                   <div style={{ flex: 1 }}>
                     <Input
                       label=""
@@ -709,7 +769,7 @@ export default function Settings() {
                     error={passwordErrors.confirm}
                     disabled={passwordLoading}
                   />
-                  <div>
+                  <div className="password-action-wrapper">
                     <Button
                       size="md"
                       variant="primary"
@@ -787,6 +847,8 @@ export default function Settings() {
                       fontSize: "0.88rem",
                       cursor: "pointer",
                       transition: "all 0.2s",
+                      width: "100%", // Better touch target on mobile
+                      maxWidth: "max-content", // Maintains desktop sizing
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = "#ff5f5615";
@@ -836,7 +898,7 @@ export default function Settings() {
                       error={deleteError}
                       disabled={deleteLoading}
                     />
-                    <div style={{ display: "flex", gap: "0.75rem" }}>
+                    <div className="danger-actions">
                       <button
                         onClick={handleDelete}
                         disabled={deleteLoading}
@@ -894,8 +956,6 @@ export default function Settings() {
           onClose={() => setToast(null)}
         />
       )}
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
