@@ -361,7 +361,7 @@ export default function Settings() {
         }}
       >
         <button
-          onClick={() => navigate("/app")}
+          onClick={() => navigate("/")}
           style={{
             background: "transparent",
             border: "1px solid #ffffff15",
@@ -391,7 +391,7 @@ export default function Settings() {
             letterSpacing: "-0.02em",
             cursor: "pointer",
           }}
-          onClick={() => navigate("/app")}
+          onClick={() => navigate("/")}
         >
           dev<span style={{ color: "#CBFF5E" }}>brief</span>
         </span>

@@ -168,7 +168,7 @@ export default function Auth() {
 
       // Verified — server should set httpOnly cookie; proceed to app
       setToast({ message: "Welcome back!", type: "success" });
-      setTimeout(() => navigate("/app"), 1000);
+      setTimeout(() => navigate("/"), 1000);
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : "Something went wrong";
@@ -244,7 +244,7 @@ export default function Auth() {
       if (data.accessToken) {
         // Auto-login flow: server should set httpOnly cookie; navigate to app
         setToast({ message: "Email verified! Welcome.", type: "success" });
-        setTimeout(() => navigate("/app"), 1000);
+        setTimeout(() => navigate("/"), 1000);
       } else {
         // Login flow — go back to login
         setToast({

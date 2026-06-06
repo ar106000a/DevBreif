@@ -604,7 +604,7 @@ export default function PublicBrief() {
             </div>
           </div>
           <button
-            onClick={() => navigate("/app")}
+            onClick={() => navigate("/")}
             style={{
               background: "#CBFF5E",
               color: "#080808",

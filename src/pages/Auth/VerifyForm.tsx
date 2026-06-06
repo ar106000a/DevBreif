@@ -53,7 +53,7 @@ const VerifyForm = () => {
         // Came from register — auto-login, go straight to app
         setToast({ message: "Email verified! Welcome.", type: "success" });
         setUser({ isLoggedIn: true });
-        setTimeout(() => navigate("/app"), 1000);
+        setTimeout(() => navigate("/"), 1000);
       } else {
         // Came from login (unverified account) — go back to sign in
         setToast({

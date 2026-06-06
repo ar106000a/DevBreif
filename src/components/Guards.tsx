@@ -8,5 +8,5 @@ export const PrivateRoute = () => {
 
 export const PublicRoute = () => {
   const { user } = useAuth();
-  return !user ? <Outlet /> : <Navigate to="/app" replace />;
+  return !user ? <Outlet /> : <Navigate to="/" replace />;
 };

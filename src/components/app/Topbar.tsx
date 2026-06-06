@@ -88,7 +88,7 @@ export default function TopBar({
       {/* Logo */}
       <span
         className="app-logo"
-        onClick={() => navigate("/app")}
+        onClick={() => navigate("/")}
         style={{
           fontFamily: "'Syne', sans-serif",
           fontSize: "1.1rem",
