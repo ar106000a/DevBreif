@@ -72,7 +72,7 @@ const LoginForm = () => {
 
       // Only navigate if we actually have a token
       setUser({ isLoggedIn: true });
-      navigate("/app");
+      navigate("/");
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response) {
         if (err.response.data.error === "Invalid credentials") {
